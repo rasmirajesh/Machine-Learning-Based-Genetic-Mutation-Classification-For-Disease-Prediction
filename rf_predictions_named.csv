@@ -1,0 +1,12 @@
+Risk_Score,Mutation_Status,Clinical_Significance,Actual_Label,Predicted_Label,Actual_Disease,Predicted_Disease
+1.3429371384157645,0,0,0,0,Cystic Fibrosis (CF),Cystic Fibrosis (CF)
+1.3429371384157645,0,0,0,0,Cystic Fibrosis (CF),Cystic Fibrosis (CF)
+0.0472301864861907,0,0,0,0,Cystic Fibrosis (CF),Cystic Fibrosis (CF)
+0.2926083561421411,1,0,0,0,Cystic Fibrosis (CF),Cystic Fibrosis (CF)
+0.0472301864861907,0,0,0,0,Cystic Fibrosis (CF),Cystic Fibrosis (CF)
+2.4007900415993766,1,1,1,1,Sickle Cell Disease (SCD),Sickle Cell Disease (SCD)
+2.633684628788726,1,1,2,2,Huntington’s Disease (HD),Huntington’s Disease (HD)
+2.409876062703008,1,1,1,1,Sickle Cell Disease (SCD),Sickle Cell Disease (SCD)
+3.1834463833002435,1,1,2,2,Huntington’s Disease (HD),Huntington’s Disease (HD)
+0.2894723661614872,1,0,0,0,Cystic Fibrosis (CF),Cystic Fibrosis (CF)
+2.1083034555779774,1,0,1,1,Sickle Cell Disease (SCD),Sickle Cell Disease (SCD)
