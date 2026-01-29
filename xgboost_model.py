@@ -2,11 +2,13 @@
 # XGBOOST FOR GENETIC DISEASE CLASSIFICATION
 # Classes: SCD, CF, HD
 # Dataset: rf_training_dataset.csv
+# With SHAP Explainability
 # ==========================================
 
 # 1. IMPORT LIBRARIES
 import pandas as pd
 import numpy as np
+import shap
 
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
@@ -19,7 +21,6 @@ import seaborn as sns
 # ------------------------------------------
 # 2. LOAD DATASET
 # ------------------------------------------
-# Make sure rf_training_dataset.csv is in the same folder
 data_path = "rf_training_dataset.csv"
 df = pd.read_csv(data_path)
 
@@ -29,12 +30,11 @@ print("Columns:", df.columns)
 # ------------------------------------------
 # 3. SPLIT FEATURES & LABEL
 # ------------------------------------------
-# Target column: 'disease'
 X = df.drop("disease", axis=1)
 y = df["disease"]
 
 # ------------------------------------------
-# 4. LABEL ENCODING (if disease is not already numeric)
+# 4. LABEL ENCODING
 # ------------------------------------------
 label_encoder = LabelEncoder()
 y_encoded = label_encoder.fit_transform(y)
@@ -58,11 +58,11 @@ print("\nTraining samples:", X_train.shape[0])
 print("Testing samples:", X_test.shape[0])
 
 # ------------------------------------------
-# 6. DEFINE XGBOOST MODEL
+# 6. DEFINE XGBOOST MODEL (SHAP-COMPATIBLE)
 # ------------------------------------------
 model = XGBClassifier(
-    objective="multi:softmax",
-    num_class=3,                # SCD, CF, HD
+    objective="multi:softprob",   # REQUIRED FOR SHAP
+    num_class=3,
     eval_metric="mlogloss",
     n_estimators=300,
     max_depth=6,
@@ -80,9 +80,9 @@ model.fit(X_train, y_train)
 print("Training completed.")
 
 # ------------------------------------------
-# 8. PREDICTION
+# 8. PREDICTION (IMPORTANT FIX)
 # ------------------------------------------
-y_pred = model.predict(X_test)
+y_pred = model.predict(X_test)   # ← NO argmax here
 
 # ------------------------------------------
 # 9. EVALUATION METRICS
@@ -94,7 +94,7 @@ print("\nClassification Report:")
 print(classification_report(
     y_test,
     y_pred,
-    target_names=["SCD", "CF", "HD"]   # FIXED ERROR HERE
+    target_names=["SCD", "CF", "HD"]
 ))
 
 # ------------------------------------------
@@ -127,17 +127,61 @@ plt.tight_layout()
 plt.show()
 
 # ------------------------------------------
-# 12. SAVE MODEL (OPTIONAL)
+# 12. SAVE MODEL
 # ------------------------------------------
 model.save_model("xgboost_disease_model.json")
 print("\nModel saved as xgboost_disease_model.json")
 
 # ------------------------------------------
-# 13. TEST ON NEW SAMPLE (OPTIONAL)
+# 13. TEST ON NEW SAMPLE
 # ------------------------------------------
-# Example sample - replace values with real feature values
-sample = np.array([[0.5, 1, 0]])   # Must match number of feature columns
+sample = np.array([[0.5, 1, 0]])   # Risk_Score, Mutation_Status, Clinical_Significance
 sample_pred = model.predict(sample)
 predicted_label = ["SCD", "CF", "HD"][sample_pred[0]]
 
 print("\nPrediction for new sample:", predicted_label)
+
+# ==========================================
+# 14. SHAP EXPLAINABILITY (FINAL & WORKING)
+# ==========================================
+
+print("\nGenerating SHAP explanations...")
+
+# Use unified SHAP explainer (handles multi-class safely)
+explainer = shap.Explainer(model, X_train)
+
+# Compute SHAP values
+shap_values = explainer(X_test)
+
+# ------------------------------------------
+# 1️⃣ GLOBAL SHAP SUMMARY (ALL CLASSES)
+# ------------------------------------------
+shap.summary_plot(
+    shap_values,
+    X_test,
+    feature_names=X.columns
+)
+
+# ------------------------------------------
+# 2️⃣ CLASS-SPECIFIC SHAP (CF CLASS)
+# ------------------------------------------
+# Class index: 0 = SCD, 1 = CF, 2 = HD
+class_index = 1
+
+shap.summary_plot(
+    shap_values.values[:, :, class_index],
+    X_test,
+    feature_names=X.columns
+)
+
+# ------------------------------------------
+# 3️⃣ LOCAL EXPLANATION (ONE SAMPLE)
+# ------------------------------------------
+sample_index = 0
+
+shap.force_plot(
+    explainer.expected_value[class_index],
+    shap_values.values[sample_index, :, class_index],
+    X_test.iloc[sample_index],
+    matplotlib=True
+)
