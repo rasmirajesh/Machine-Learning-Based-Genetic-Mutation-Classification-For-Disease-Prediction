@@ -4,7 +4,7 @@ export default function Predict() {
   return (
     <div className="min-h-screen bg-[#f5f7f9]">
 
-      {/* Navbar */}
+      {/* Navbar
       <nav className="flex justify-between items-center px-10 py-4 bg-white shadow-sm">
         <h1 className="text-xl font-semibold text-[#1e3a5f]">
           GeneMutate AI
@@ -25,7 +25,7 @@ export default function Predict() {
             About
           </span>
         </div>
-      </nav>
+      </nav> */}
 
       {/* Page Content */}
       <div className="px-20 py-12">
