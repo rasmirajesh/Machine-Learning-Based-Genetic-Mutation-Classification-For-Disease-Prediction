@@ -1,9 +1,53 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 const Explainability = () => {
+  const [globalPlots, setGlobalPlots] = useState(null);
+  const [localPlot, setLocalPlot] = useState(null);
+  const [file, setFile] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // ================= GLOBAL SHAP =================
+  useEffect(() => {
+    fetch("http://127.0.0.1:8000/explain")
+      .then((res) => res.json())
+      .then((data) => {
+        setGlobalPlots(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error loading global SHAP:", err);
+        setLoading(false);
+      });
+  }, []);
+
+  // ================= LOCAL SHAP =================
+  const handleLocalExplain = async () => {
+    if (!file) {
+      alert("Please upload a CSV file first.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const response = await fetch(
+        "http://127.0.0.1:8000/explain-local",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      const data = await response.json();
+      setLocalPlot(data.force_plot);
+    } catch (error) {
+      console.error("Error generating local SHAP:", error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 px-10 py-10">
-
       {/* ================= HEADER ================= */}
       <div className="mb-10 flex justify-between items-start">
         <div>
@@ -11,89 +55,103 @@ const Explainability = () => {
             Model Explainability
           </h1>
           <p className="text-gray-600 mt-2">
-            Understand how the XGBoost model makes predictions using SHAP
-            (SHapley Additive Explanations).
+            Understand how the XGBoost model makes predictions using SHAP.
           </p>
         </div>
 
         <div className="bg-green-100 text-green-700 px-4 py-1 rounded-full text-sm font-medium">
-          Model: XGBoost | Explainability: SHAP
+          Model: XGBoost | SHAP
         </div>
       </div>
 
-      {/* ================= GLOBAL EXPLAINABILITY ================= */}
-      <div className="mb-14">
-        <h2 className="text-2xl font-semibold text-gray-800 mb-6">
-          Global Explainability
-        </h2>
+      {/* ================= GLOBAL ================= */}
+      {loading ? (
+        <div className="text-center text-gray-500">
+          Loading SHAP visualizations...
+        </div>
+      ) : globalPlots ? (
+        <>
+          <h2 className="text-2xl font-semibold text-gray-800 mb-6">
+            Global Explainability
+          </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-14">
+            {/* Feature Importance */}
+            <div className="bg-white rounded-2xl shadow-md p-6">
+              <h3 className="text-lg font-semibold mb-4">
+                Mean SHAP Feature Importance
+              </h3>
 
-          {/* Feature Importance */}
-          <div className="bg-white rounded-2xl shadow-md p-6 hover:shadow-lg transition duration-300">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">
-              Mean SHAP Feature Importance
-            </h3>
-
-            {/* Replace with backend image later */}
-            <div className="bg-gray-100 rounded-xl h-72 flex items-center justify-center text-gray-400">
-              Global SHAP Bar Plot
+              <img
+                src={`data:image/png;base64,${globalPlots.global_plot}`}
+                alt="Global SHAP"
+                className="rounded-xl w-full"
+              />
             </div>
 
-            <p className="text-sm text-gray-600 mt-4 leading-relaxed">
-              Shows the overall contribution of each feature across all disease
-              classes. Higher mean SHAP values indicate stronger influence on
-              model predictions.
-            </p>
-          </div>
+            {/* Summary Plot */}
+            <div className="bg-white rounded-2xl shadow-md p-6">
+              <h3 className="text-lg font-semibold mb-4">
+                SHAP Summary Plot
+              </h3>
 
-          {/* Summary Plot */}
-          <div className="bg-white rounded-2xl shadow-md p-6 hover:shadow-lg transition duration-300">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">
-              SHAP Summary (Beeswarm) Plot
-            </h3>
-
-            {/* Replace with backend image later */}
-            <div className="bg-gray-100 rounded-xl h-72 flex items-center justify-center text-gray-400">
-              SHAP Summary Plot
+              <img
+                src={`data:image/png;base64,${globalPlots.summary_plot}`}
+                alt="Summary SHAP"
+                className="rounded-xl w-full"
+              />
             </div>
-
-            <p className="text-sm text-gray-600 mt-4 leading-relaxed">
-              Displays how individual feature values affect the model output.
-              Red indicates higher feature values and blue indicates lower
-              feature values.
-            </p>
           </div>
-
+        </>
+      ) : (
+        <div className="text-red-500">
+          Failed to load global SHAP plots.
         </div>
-      </div>
+      )}
 
-      {/* ================= LOCAL EXPLAINABILITY ================= */}
-      <div>
-        <h2 className="text-2xl font-semibold text-gray-800 mb-6">
-          Local Explainability
-        </h2>
+      {/* ================= LOCAL ================= */}
+      <h2 className="text-2xl font-semibold text-gray-800 mb-6">
+        Local Explainability
+      </h2>
 
-        <div className="bg-white rounded-2xl shadow-md p-8 hover:shadow-lg transition duration-300">
+      <div className="bg-white rounded-2xl shadow-md p-8">
+        <h3 className="text-lg font-semibold mb-4">
+          SHAP Force Plot (Individual Prediction)
+        </h3>
 
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">
-            SHAP Force Plot (Individual Prediction)
-          </h3>
+        {/* Upload */}
+        <input
+          type="file"
+          accept=".csv"
+          onChange={(e) => setFile(e.target.files[0])}
+          className="mb-4"
+        />
 
-          {/* Replace with force plot from backend later */}
-          <div className="bg-gray-100 rounded-xl h-80 flex items-center justify-center text-gray-400">
-            SHAP Force Plot Visualization
+        <button
+          onClick={handleLocalExplain}
+          className="bg-green-600 text-white px-4 py-2 rounded-lg mb-6"
+        >
+          Generate Local Explanation
+        </button>
+
+        {/* Plot */}
+        {localPlot ? (
+          <img
+            src={`data:image/png;base64,${localPlot}`}
+            alt="Local SHAP"
+            className="rounded-xl w-full"
+          />
+        ) : (
+          <div className="bg-gray-100 rounded-xl h-64 flex items-center justify-center text-gray-400">
+            Upload CSV and click Generate
           </div>
+        )}
 
-          <p className="text-sm text-gray-600 mt-4 leading-relaxed">
-            This visualization explains how each feature contributes positively
-            or negatively to a specific prediction. Features pushing the
-            prediction higher appear on one side, while those reducing it appear
-            on the opposite side.
-          </p>
-        </div>
+        <p className="text-sm text-gray-600 mt-4">
+          This plot explains how each feature contributes to a specific
+          prediction.
+        </p>
       </div>
-
     </div>
   );
 };

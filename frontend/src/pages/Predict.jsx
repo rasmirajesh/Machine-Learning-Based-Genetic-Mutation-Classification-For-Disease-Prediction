@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
 
 export default function Predict() {
 
@@ -18,7 +17,7 @@ export default function Predict() {
     try {
       const response = await fetch("http://127.0.0.1:8000/predict", {
         method: "POST",
-        body: formData
+        body: formData,
       });
 
       const data = await response.json();
@@ -38,7 +37,6 @@ export default function Predict() {
   return (
     <div className="min-h-screen bg-[#f5f7f9]">
 
-      {/* Page Content */}
       <div className="px-20 py-12">
 
         {/* Title */}
@@ -76,7 +74,6 @@ export default function Predict() {
 
             {/* Buttons */}
             <div className="flex gap-4">
-
               <button
                 onClick={handlePredict}
                 className="w-full bg-[#6c8ea3] text-white py-2 rounded-lg hover:opacity-90 transition"
@@ -90,28 +87,34 @@ export default function Predict() {
               >
                 Reset
               </button>
-
             </div>
+
           </div>
 
           {/* RIGHT CARD */}
           <div className="bg-white rounded-xl shadow-sm p-8 flex flex-col justify-center items-center text-center">
 
-            {prediction ? (
+            {prediction && prediction.predictions ? (
               <>
                 <div className="text-5xl mb-4">🧬</div>
 
                 <h4 className="text-lg font-semibold text-gray-700">
-                  Prediction Result
+                  Prediction Results
                 </h4>
 
-                <p className="text-gray-600 mt-4">
-                  <strong>Disease:</strong> {prediction.Predicted_Disease}
-                </p>
+                <div className="mt-6 space-y-2">
+                  {prediction.predictions.map((item, index) => (
+  <div key={index} className="mb-4">
+    <div className="text-lg font-semibold text-gray-800">
+      Disease: {item.predicted_disease}
+    </div>
 
-                <p className="text-gray-600 mt-2">
-                  <strong>Risk Score:</strong> {prediction.Risk}
-                </p>
+    <div className="text-sm text-gray-500">
+      Confidence: {item.confidence}%
+    </div>
+  </div>
+))}
+                </div>
               </>
             ) : (
               <>
@@ -130,6 +133,7 @@ export default function Predict() {
           </div>
 
         </div>
+
       </div>
 
       {/* Footer */}
